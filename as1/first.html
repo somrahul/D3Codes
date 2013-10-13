@@ -3,6 +3,7 @@
 <head>
 	<title>Somesh's First D3</title>
 	<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+	<link type="text/css" rel="stylesheet" href="style.css">
 </head>
 <body>
 	<script type="text/javascript">
@@ -12,6 +13,11 @@
 		// .text("New Para");
 
 		var dataset = [5, 10, 15, 25, 40];
+
+		var dataset_div = [ 25, 7, 5, 26, 11, 8, 25, 14, 23, 19,
+                14, 11, 22, 29, 11, 13, 12, 17, 18, 10,
+                24, 18, 25, 9, 3 ];
+
 		d3.select("body")
 		.selectAll("p")
 		.data(dataset)
@@ -26,5 +32,20 @@
 		);
 
 		
-	</script
+	</script>
+	<br>
+	<script>
+	d3.select("body")
+	.selectAll("div")
+	.data(dataset_div)
+	.enter()
+	.append("div")
+	.attr("class", "bar")
+	.style("margin-right", "2px")
+	.style("height", function(d){
+		return d*5 + "px";
+	});
+
+	</script>
+
 </body>
