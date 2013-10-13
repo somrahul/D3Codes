@@ -4,3 +4,10 @@ div.bar {
     height: 75px;   /* We'll override this later */
     background-color: teal;
 }
+
+
+svg .pumpkin {
+    fill: yellow;
+    stroke: orange;
+    stroke-width: 5;
+ }
