@@ -1,0 +1,64 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html> <head>
+<title>Part 1</title>
+</head>
+<body>
+<div id="container"></div>
+
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="http://d3js.org/queue.v1.min.js"></script>
+<script>
+
+// create an empty array, at the end you should have objects in here,
+// one object per university
+univ = [];
+
+// helper that contains the columns
+columns = ["rank_2013", "rank_2012", "institution", "country", "academic_reputation", "employer_reputation", "faculty_student", "citations_per_faculty", "international_faculty", "international_students", "overall"];
+
+
+// read the file creating a new object for every line
+// we need to wrap this in a "queue" so that we finish parsing before
+// we try to write everything to the screen
+
+queue()
+ .defer(d3.csv,"universities.csv", function(d) { // YOU NEED TO FILL THIS IN) use + // convert "Length" column to number +d.Length 
+  return {
+    var univ = [
+    columns[0]: d.columns[0],
+    columns[1]: d.columns[1],
+    columns[2]: d.columns[2],
+    columns[3]: d.columns[3],
+    columns[4]: d.columns[4],
+    ];
+  };
+}, function(error, rows) {
+  console.log(rows);
+});
+ .await(ready);  // call ready when finished reading
+
+function ready() {
+
+    // I'M GOING TO START THE TABLE FOR YOU
+    var table = d3.select("#container").append("table"),
+        thead = table.append("thead"),
+        tbody = table.append("tbody");
+
+    // you now have 3 variables, table, thead (the table header), and tbody
+    // (the table body).  You can modify this if you want
+    // but here is where you build the table using d3
+
+    // YOU NEED TO REPLACE THE CODE BELOW TO MAKE THE TABLE
+    d3.select("body").selectAll("p")
+    .data(univ)
+    .enter()
+    .append("p")
+    .text(function(d) { return d.institution; });
+
+}
+
+</script>
+
+</body>
+</html>
+
