@@ -1,0 +1,212 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html> <head>
+<title>Part 2</title>
+<style type="text/css">
+			
+			.axis path,
+			.axis line {
+				fill: none;
+				stroke: black;
+				shape-rendering: crispEdges;
+        margin-left: 200px;
+			}
+			
+			.axis text {
+				font-family: sans-serif;
+				font-size: 11px;
+			}
+
+		</style>
+</head>
+<body>
+<div id="chart"></div>
+
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="http://d3js.org/queue.v1.min.js"></script>
+<script>
+
+var univ = [];
+
+// create an empty array
+columns = ["rank_2013", "rank_2012", "institution", "country",
+"academic_reputation", "employer_reputation", "faculty_student",
+"citations_per_faculty", "international_faculty",
+"international_students", "overall"];
+
+// 
+numerical_columns = ["academic_reputation", "employer_reputation",
+"faculty_student", "citations_per_faculty", "international_faculty",
+"international_students", "overall"];
+
+// read the file creating a new object for every line
+queue()
+ .defer(d3.csv,"universities.csv", function(d) { 
+  univ.push({'rank_2013': +d.rank_2013, 'rank_2012': +d.rank_2012, 'institution': d.institution, 'country': d.country, 'academic_reputation': +d.academic_reputation, 
+'employer_reputation': +d.employer_reputation, 'faculty_student': +d.faculty_student, 'citations_per_faculty': +d.citations_per_faculty, 'international_faculty': +d.international_faculty, 'international_students': +d.international_students, 'overall': +d.overall});
+ //dump(univ);
+  })// COPY THIS FROM PART 1)
+ .await(ready);  // call ready when finished reading
+
+// COMPLETE THIS FUNCTION
+// cname is the column name
+// inputArray is the array of values
+// you should sort the array, and calulate the value
+// at the different percentiles: 0, 25, 50, 75, and 100
+// these should be returned in an object of the type described below
+function calcQuartile(cname,inputArray) {
+     // COMPLETE THIS FUNCTION
+     // THE DATA RETURNED SHOULD NOT BE 0
+     inputArray = inputArray.sort(function(a,b){return a - b});
+     //length = inputArray.length;
+     console.log(cname); 
+     //console.log(inputArray);
+     console.log(inputArray[0]);
+     console.log(inputArray[25]);
+     console.log(inputArray[50]);
+     console.log(inputArray[75]);
+     console.log(inputArray[100]);
+    
+     return({name:cname,
+             p0:inputArray[0],
+             p25:inputArray[25],
+             p50:inputArray[50],
+             p75:inputArray[75],
+             p100:inputArray[100]});
+}
+
+// pull data is a helper function I wrote for you
+// it pulls all the values in table tbl for the column named 'column'
+// returns an array of values
+function pullData(tbl,column) {
+     var toReturn = [];
+     for (var i = 0; i < tbl.length; i++) {
+         u = tbl[i];
+         toReturn.push(u[column]);
+     }
+     return toReturn;
+}
+
+var boxplotdata = [];
+
+function ready() {
+
+      // this will fill in the data array for you as long as
+      // univ gets filled in correctly and calcQuartile is right
+      for (var i = 0 ; i < numerical_columns.length ; i++) {
+           var nm = numerical_columns[i];
+           boxplotdata.push(calcQuartile(nm,pullData(univ,nm)));
+      }
+
+      var w=960,h=1000;
+
+      var svg=d3.select("#chart") 
+              .append("svg") 
+              .attr("width",w).attr("height",h); 
+
+      var yScale = d3.scale.linear()
+                  .domain([100, 0])
+                  .range([10, 510]);
+
+      var yAxis = d3.svg.axis()
+                  .scale(yScale)
+                  .orient("left")
+                  .ticks(10);
+
+
+      
+
+       // CREATE THE BOX PLOT HERE
+       boxPlot = svg.selectAll("g")
+           .data(boxplotdata)
+           .enter()
+           .append("g")
+           .attr("class", "boxPlots")
+           .attr("id", function(d, i){return "box"+i});
+
+      line =  boxPlot
+           .append("line")
+           .attr("x1", function(d, i){return 100+i*120})
+           .attr("y1", function(d){return 10 + (100 - d['p100'])*5})
+           .attr("x2", function(d, i){return 100+i*120})
+           .attr("y2", function(d){return 10 + (100 - d['p0'])*5})
+           .attr("stroke-width", "4").attr("stroke", "black");
+
+      bars = boxPlot
+           .append("line")
+           .attr("x1", function(d, i){return 100+i*120})
+           .attr("y1", function(d){return 10 + (100 - d['p75'])*5})
+           .attr("x2", function(d, i){return 100+i*120})
+           .attr("y2", function(d){return 10 + (100 - d['p25'])*5})
+           .attr("stroke-width", "20").attr("stroke", "green");
+           
+       
+      mark = boxPlot    
+           .append("line")
+           .attr("x1", function(d, i){return 100+i*120})
+           .attr("y1", function(d){return 10 + (100 - d['p50'])*5})
+           .attr("x2", function(d, i){return 100+i*120})
+           .attr("y2", function(d){return 10 + (100 - d['p50'])*5+5})
+           .attr("stroke-width", "20").attr("stroke", "white");
+
+      labels = boxPlot
+                .append("text")           
+                .attr("font-size","16px") 
+                .attr("fill", "green")
+                .attr("font-family", "sans-serif")
+                .attr("text-anchor", "begin")
+                .attr("transform", function(d, i) {return "translate("+(96+i*120) + ", " + 515 + ")rotate(90)";})
+                .text(function(d) { return d['name']; });
+             // labels = svg.selectAll("text")
+             //  .data(boxplotdata)
+             //  .enter()
+             //  .append("text")
+             //  .text(function(d){return d['name']})
+             //  .attr("x", function(d, i){return 100+i*120})
+             //  .attr("y", function(d, i){return 600})
+             //  .attr("font-family", "sans-serif")
+             //  .attr("font-size", "11px")
+             //  .attr("fill", "black")
+             //  .attr("text-anchor", "middle");
+             //  //.attr("transform", "rotate(-90)");
+             //  //.attr('transform', 'translate(-' + 100 + ',' + 450 / 2 + ') rotate(-90)');
+
+      var padding = 30;          
+      //drawing the axes
+      svg.append("g")
+    .attr("class", "axis")
+    .attr("transform", "translate(" + padding + ",0)")
+    .call(yAxis);
+
+
+    // var g = svg.selectAll("g")
+    // .data(data)
+    // .enter().append("g")
+    // .attr("transform", function(d) { return "translate(0," + i * 10 + ")"; });
+
+    // g.append("rect")
+    // .attr("height", 10)
+    // .attr("width", function(d) { return d.interestingValue; });
+
+    // g.append("text")
+    // .text(function(d) { return d.interestingValue; });
+
+      // MAKE A THIN LINE from the 0th to 100th percentile
+      // MAKE A THICK BOX from the 25th to 75th
+      // MAKE A THIN WHITE BOX at the 50th
+
+      //  ADD TEXT ANNOTATION BELOW EACH BAR
+      //  ADD THE AXIS
+
+}
+
+function dump(obj) {
+    var out = '';
+    var mystring = JSON.stringify(obj);
+    console.log(mystring);
+}
+
+</script>
+
+</body>
+</html>
+
