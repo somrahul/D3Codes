@@ -1,0 +1,350 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html> <head>
+<title>Part 3</title>
+<style type="text/css">
+			
+			.axis path,
+			.axis line {
+				fill: none;
+				stroke: black;
+				shape-rendering: crispEdges;
+			}
+			
+			.axis text {
+				font-family: sans-serif;
+				font-size: 11px;
+			}
+
+		</style>
+</head>
+<body>
+<FORM>
+Include:
+<BR>
+   <INPUT TYPE="checkbox" name="toshow" value="academic_reputation" checked onclick="drawIt();"/> Academic Reputation
+   <INPUT TYPE="checkbox" name="toshow" value="employer_reputation" checked onclick="drawIt();"/> Employer Reputation
+   <INPUT TYPE="checkbox" name="toshow" value="faculty_student" checked onclick="drawIt();"/> Faculty to Student
+   <INPUT TYPE="checkbox" name="toshow" value="citations_per_faculty" checked onclick="drawIt();"/> Citations per Faculty
+<BR>
+   <INPUT TYPE="checkbox" name="toshow" value="international_faculty" checked onclick="drawIt();"/> International Faculty
+   <INPUT TYPE="checkbox" name="toshow" value="international_students" checked onclick="drawIt();"/> International Students
+   <INPUT TYPE="checkbox" name="toshow" value="overall" checked onclick="drawIt();"/> Overall
+| Find:
+</FORM>
+<div id="chart"></div>
+
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="http://d3js.org/queue.v1.min.js"></script>
+<script>
+
+// create an empty array
+var univ = [];
+columns = ["rank_2013", "rank_2012", "institution", "country",
+"academic_reputation", "employer_reputation", "faculty_student",
+"citations_per_faculty", "international_faculty",
+"international_students", "overall"];
+
+numerical_columns = ["academic_reputation", "employer_reputation",
+"faculty_student", "citations_per_faculty", "international_faculty",
+"international_students", "overall"];
+
+// read the file creating a new object for every line
+queue()
+.defer(d3.csv,"universities.csv", function(d) { 
+  univ.push({'rank_2013': +d.rank_2013, 'rank_2012': +d.rank_2012, 'institution': d.institution, 'country': d.country, 'academic_reputation': +d.academic_reputation, 
+'employer_reputation': +d.employer_reputation, 'faculty_student': +d.faculty_student, 'citations_per_faculty': +d.citations_per_faculty, 'international_faculty': +d.international_faculty, 'international_students': +d.international_students, 'overall': +d.overall});
+ //dump(univ);
+  })
+.await(ready);
+
+function calcQuartile(cname,inputArray) {
+inputArray = inputArray.sort(function(a,b){return a - b});
+     //length = inputArray.length;
+     // console.log(cname); 
+     // //console.log(inputArray);
+     // console.log(inputArray[0]);
+     // console.log(inputArray[25]);
+     // console.log(inputArray[50]);
+     // console.log(inputArray[75]);
+     // console.log(inputArray[100]);
+    
+     return({name:cname,
+             p0:inputArray[0],
+             p25:inputArray[25],
+             p50:inputArray[50],
+             p75:inputArray[75],
+             p100:inputArray[100]});
+}
+
+function pullData(tbl,column) {
+     var toReturn = [];
+     for (var i = 0; i < tbl.length; i++) {
+         u = tbl[i];
+         toReturn.push(u[column]);
+     }
+     return toReturn;
+}
+
+ var boxplotdata = [];
+
+function drawIt() {
+
+   // figure out what's checked
+    var selected = document.forms[0]["toshow"];
+    var validcats = [];
+    for (i = 0 ; i < selected.length ; i++) {
+        if (selected[i].checked) {
+            validcats.push(selected[i].value);
+        }
+    }
+    //console.log(validcats);
+    // filter our sourcedata so we're only working with checked
+    //categories
+
+    // empty the data array
+    boxplotdata = []
+
+    // pull the good data
+    for (var i = 0 ; i < validcats.length ; i++) {
+           var nm = validcats[i];
+           boxplotdata.push(calcQuartile(nm,pullData(univ,nm)));
+    }
+
+    //draw the new boxplot
+    //console.log(JSON.stringify(boxplotdata));
+    drawBoxPlot(boxplotdata);
+
+     // figure out which university is selected, the index will be set
+     // to -1 if none are selected
+    var e = document.getElementById("dropdown");
+    selectedindex = e.options[e.selectedIndex].value - 1;
+
+    //console.log(selectedindex);
+
+    universityMark(selectedindex, univ, validcats);
+     // ADD CODE HERE TO REFRESH THE VIS TO ONLY INCLUDE THE SELECTED
+     // BOX PLOTS
+}
+
+
+function ready() {
+
+     // COPY YOUR CODE FROM BEFORE
+     for (var i = 0 ; i < numerical_columns.length ; i++) {
+           var nm = numerical_columns[i];
+           boxplotdata.push(calcQuartile(nm,pullData(univ,nm)));
+      }
+
+
+      //defining the mouseover and the mouseout functions
+      // function changeColor() {
+        
+      //   return;
+      // } 
+
+      //calling the boxplot drawing function
+      drawBoxPlot(boxplotdata); 
+
+
+     // THE FOLLOWING CODE WILL AUTOMATICALLY POPULATE THE DROPDOWN BOX
+     var opt = d3.select("form").append("select");
+     opt.on("change", drawIt)
+     opt.attr("id","dropdown")
+     insts = pullData(univ,"institution")
+     insts.unshift("");
+     opt.selectAll("option").data(insts).enter().append("option").attr("value",function(d,i) {return i;}).text(function(d) {return d;})
+
+}
+
+//extracting the drawing of the boxplot to a new function
+
+function drawBoxPlot(boxplotdata) {
+  
+  var removeColorAndLines = function() {
+        d3.select(this)
+        .select(".line1")
+        .attr("stroke", "black");
+        d3.select(this)
+        .select(".line2")
+        .attr("stroke", "green");
+        d3.selectAll(".hoverLines").remove();
+      }
+
+      //defining the drawlines function
+      function drawLines(data) {
+        //console.log(jsonString);
+        //parsing the json string
+        //var d = JSON.parse(jsonString);
+       //console.log(data, boxPlot);
+       //console.log(data.length, boxPlot);
+       var hoverLine = boxPlot;
+
+       if (boxPlot.length < 5){
+        //boxPlot.length = 5;
+       }
+
+       for(var i=0;i<data.length;i++){
+        svg
+          .append("line")
+          .attr("x1", "23")
+          .attr("y1", 10 + (100 - data[i])*5)
+          .attr("x2", "900")
+          .attr("y2", 10 + (100 - data[i])*5)
+          .attr("stroke-width", "1")
+          .attr("stroke", "#C0C0C0")
+          .attr("class", "hoverLines");
+
+        svg
+          .append("text")
+          .attr("class", "hoverLines")
+          .attr("fill", "#C0C0C0")
+          .attr("font-size","12px")
+          .attr("x", 900)
+          .attr("y", 10 + (100 - data[i])*5)
+          .text(data[i]);
+
+       }   
+
+          // hoverLine.append("line")
+          // .data(data)
+          // .attr("x1", "23")
+          // .attr("y1", function(d){return 10 + (100 - d)*5})
+          // .attr("x2", "900")
+          // .attr("y2", function(d){return 10 + (100 - d)*5})
+          // .attr("stroke-width", "1")
+          // .attr("stroke", "#C0C0C0")
+          // .attr("class", "hoverLines");
+
+       // var numberLabels = boxPlot
+       //                    .append("text")
+       //                    .data(data)
+       //                    .attr("class", "hoverLines")
+       //                    .attr("fill", "#C0C0C0")
+       //                    .attr("font-size","12px")
+       //                    .attr("x", 900)
+       //                    .attr("y", function(d){return 10 + (100 - d)*5})
+       //                    .text(function(d){return d});
+                          
+
+      }
+
+
+       var w=960,h=1000;
+       var svg=d3.select("#chart").select('svg').remove();
+
+       var svg=d3.select("#chart") 
+              .append("svg") 
+              .attr("width",w).attr("height",h); 
+
+      var yScale = d3.scale.linear()
+                  .domain([100, 0])
+                  .range([10, 510]);
+
+      var yAxis = d3.svg.axis()
+                  .scale(yScale)
+                  .orient("left")
+                  .ticks(10);
+
+
+       // CREATE THE BOX PLOT HERE
+       boxPlot = svg.selectAll("g")
+           .data(boxplotdata)
+           .enter()
+           .append("g")
+           .attr("class", "boxPlots")
+           .attr("id", function(d, i){return "box"+i})
+           //adding the mouseover event
+           .on('mouseover', function(d){d3.select(this).select(".line1").attr("stroke", "blue");
+                            d3.select(this).select(".line2").attr("stroke", "blue");
+                            d3.select(this).select("line3").attr("stroke", "white");
+                            lineArray = [d['p0'], d['p25'], d['p50'], d['p75'], d['p100']]; //help from class student Fu
+                            drawLines(lineArray);}) //var jsonString = JSON.stringify(d); 
+           //ask professor -> why can't i call 2 functions
+           //adding the mouseout event
+           .on('mouseout', removeColorAndLines)
+           ;
+
+      line =  boxPlot
+           .append("line")
+           .attr("x1", function(d, i){return 100+i*120})
+           .attr("y1", function(d){return 10 + (100 - d['p100'])*5})
+           .attr("x2", function(d, i){return 100+i*120})
+           .attr("y2", function(d){return 10 + (100 - d['p0'])*5})
+           .attr("stroke-width", "4").attr("stroke", "black")
+           .attr("class", "line1");
+
+      bars = boxPlot
+           .append("line")
+           .attr("x1", function(d, i){return 100+i*120})
+           .attr("y1", function(d){return 10 + (100 - d['p75'])*5})
+           .attr("x2", function(d, i){return 100+i*120})
+           .attr("y2", function(d){return 10 + (100 - d['p25'])*5})
+           .attr("stroke-width", "20").attr("stroke", "green")
+           .attr("class", "line2");
+           
+       
+      mark = boxPlot   
+           .append("line")
+           .attr("x1", function(d, i){return 100+i*120})
+           .attr("y1", function(d){return 10 + (100 - d['p50'])*5-2})
+           .attr("x2", function(d, i){return 100+i*120})
+           .attr("y2", function(d){return 10 + (100 - d['p50'])*5+2})
+           .attr("stroke-width", "20").attr("stroke", "white")
+           .attr("class", "line3");
+
+      labels = boxPlot
+            .append("text")           
+            .attr("font-size","16px") 
+            .attr("fill", "green")
+            .attr("font-family", "sans-serif")
+            .attr("text-anchor", "begin")
+            .attr("transform", function(d, i) {return "translate("+(96+i*120) + ", " + 515 + ")rotate(90)";})
+            .text(function(d) { return d['name']; });
+
+      var padding = 30;          
+      //drawing the axes
+      svg.append("g")
+    .attr("class", "axis")
+    .attr("transform", "translate(" + padding + ",0)")
+    .call(yAxis);
+}
+
+function universityMark(selectedIndex, univ, validcats){
+  
+  // var circleArray = [univ[selectedIndex][validcats[0]]];
+  // console.log("circleArray= " + circleArray);
+  //console.log("boxplotdata= " + JSON.stringify(boxplotdata));
+  
+  //definign the svg
+  var svg = d3.select("#chart").select('svg')
+
+  //looping through the valid categories
+  for (v in validcats){
+    var circleY = [univ[selectedIndex][validcats[v]]];
+    //console.log("circleY= " + circleY);
+    //adding the circle 
+    svg
+    .append("circle")
+    .attr("cx",100+v*120)
+    .attr("cy",10+(100-circleY)*5)
+    .attr("r",5)
+    .attr("fill","red");
+
+  //adding the text
+    svg
+    .append("text")
+    .attr("x",115+v*120)
+    .attr("y",15+(100-circleY)*5)
+    .attr("font-size","12px")
+    .attr("fill","#C0C0C0")
+    .text(circleY);
+
+  }
+   
+}
+
+</script>
+
+</body>
+</html>
+
